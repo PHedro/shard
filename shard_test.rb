@@ -37,16 +37,17 @@ class ShardTest < Test::Unit::TestCase
         'files' => ["/server_4/tmp/sample_file_more"]
       }
     }
+    @nodes_paths = ["/server_1", "/server_2", "/server_3", "/server_4"]
     @path = FileUtils.pwd
   end
 
   def teardown
-    actual_path = FileUtils.pwd
-    @nodes_four.keys.each do |node_index|
-      delete_tmp_usrs_files node_index
-      tmps_path = "#{actual_path}#{@nodes_four[node_index]['path']}/tmp"
-      Dir["#{tmps_path}/*"].each do |file|
-        File.delete file unless file == "#{tmps_path}/sample_file_more"
+    @nodes_paths.each do |path_node|
+      tmps_path = "#{@path}#{path_node}/tmp/"
+      partial_logs_path = "#{tmps_path}usrs/"
+      FileUtils.rm_rf partial_logs_path
+      Dir["#{tmps_path}*"].each do |file|
+        File.delete file unless file == "#{tmps_path}sample_file_more"
       end
     end
   end
