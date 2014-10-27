@@ -38,6 +38,14 @@ class ShardTest < Test::Unit::TestCase
     assert_equal(true, result)
   end
 
+  def test_delete_specific
+    file_expected = @path + '/server_1/tmp/usrs/0352b590-05ac-11e3-9923-c3e7d8408f3a/15Aug20131354380300_Server1'
+    @node_shard.shard_input_line @line_input
+    @node_shard.delete_tmp_user_specific_files '0352b590-05ac-11e3-9923-c3e7d8408f3a'
+    result = File.file?(file_expected)
+    assert_equal(false, result)
+  end
+
   def test_shard_input_line_correct
     file_expected = @path + '/server_1/tmp/usrs/0352b590-05ac-11e3-9923-c3e7d8408f3a/15Aug20131354380300_Server1'
     @node_shard.shard_input_line @line_input
@@ -51,7 +59,7 @@ class ShardTest < Test::Unit::TestCase
   def test_merge_correct
     @node_shard.shard_input_line @line_input
     file_expected = @path + '/server_1/tmp/0352b590-05ac-11e3-9923-c3e7d8408f3a'
-    merge_log_file @server_index
+    @node_shard.merge_log_file
     result = File.file?(file_expected)
     assert_equal(true, result)
   end
@@ -59,76 +67,28 @@ class ShardTest < Test::Unit::TestCase
   def test_delete_temp_files
     expected = @path + '/server_1/tmp/usrs'
     @node_shard.shard_input_line @line_input
-    merge_log_file @server_index
-    delete_tmp_usrs_files @server_index
+    @node_shard.merge_log_file
+    @node_shard.delete_tmp_usrs_files
     result = File.directory?(expected)
     assert_equal(false, result)
   end
 
   def test_shard_logs
-    file_expected = @path + '/server_1/tmp/0352b590-05ac-11e3-9923-c3e7d8408f3a'
-    shard_logs
-    result = File.file?(file_expected)
-    assert_equal(true, result)
-  end
-
-  def test_thr_init_shard_one
-    file_expected_one = @path + '/server_1/tmp/usrs/0352b590-05ac-11e3-9923-c3e7d8408f34/15Aug20131401480300_Server3'
-    thread_initial_files_shard @nodes_four.keys
-    result_one = File.file?(file_expected_one)
-    assert_equal(true, result_one)
-  end
-
-  def test_thr_init_shard_two
-    file_expected_two = @path + '/server_2/tmp/usrs/5352b590-05ac-11e3-9923-c3e7d8408f3a/15Aug20131354380300_Server2'
-    thread_initial_files_shard @nodes_four.keys
-    result_two = File.file?(file_expected_two)
-    assert_equal(true, result_two)
-  end
-
-  def test_thr_init_shard_three
-    file_expected_three = @path + '/server_3/tmp/usrs/f85f124a-05cd-11e3-8a11-a8206608c529/15Aug20131354380300_Server1'
-    thread_initial_files_shard @nodes_four.keys
-    result_three = File.file?(file_expected_three)
-    assert_equal(true, result_three)
-  end
-
-  def test_thr_init_shard_four
-    file_expected_four = @path + '/server_4/tmp/usrs/c85f124a-05cd-11e3-8a11-a8206608c527/15Aug20131358380300_Server3'
-    thread_initial_files_shard @nodes_four.keys
-    result_four = File.file?(file_expected_four)
-    assert_equal(true, result_four)
-  end
-
-  def test_merge_partial_logs_one
     file_expected_one = @path + '/server_1/tmp/0352b590-05ac-11e3-9923-c3e7d8408f3a'
-    thread_initial_files_shard @nodes_four.keys
-    thread_merge_partial_logs @nodes_four.keys
-    result_one = File.file?(file_expected_one)
-    assert_equal(true, result_one)
-  end
-
-  def test_merge_partial_logs_two
     file_expected_two = @path + '/server_2/tmp/a352b590-05ac-11e3-9923-c3e7d8408f3a'
-    thread_initial_files_shard @nodes_four.keys
-    thread_merge_partial_logs @nodes_four.keys
-    result_two = File.file?(file_expected_two)
-    assert_equal(true, result_two)
-  end
-
-  def test_merge_partial_logs_three
     file_expected_three = @path + '/server_3/tmp/f352b590-05ac-11e3-9923-c3e7d8408f33'
-    thread_initial_files_shard @nodes_four.keys
-    thread_merge_partial_logs @nodes_four.keys
-    result_three = File.file?(file_expected_three)
-    assert_equal(true, result_three)
-  end
-
-  def test_merge_partial_logs_four
     file_expected_four = @path + '/server_4/tmp/c85f124a-05cd-11e3-8a11-a8206608c527'
-    thread_initial_files_shard @nodes_four.keys
-    thread_merge_partial_logs @nodes_four.keys
+
+    nodes = [@node_shard, Shard.new(1), Shard.new(2), Shard.new(3)]
+    Shard.shard_logs nodes
+
+    result_one = File.file?(file_expected_one)
+    result_two = File.file?(file_expected_two)
+    result_three = File.file?(file_expected_three)
     result_four = File.file?(file_expected_four)
+    assert_equal(true, result_one)
+    assert_equal(true, result_two)
+    assert_equal(true, result_three)
     assert_equal(true, result_four)
   end
 end

@@ -23,9 +23,9 @@ class Shard
 
   def initial_files_shard
     @my_log_list.each do |filepath|
-      File.open(path + filepath, 'r') do |file|
+      File.open(@my_abs_path + filepath, 'r') do |file|
         file.each_line do |line_input|
-          shard_input_line @my_name, line_input, @nodes
+          self.shard_input_line line_input
         end
       end
     end
@@ -49,76 +49,60 @@ class Shard
       logfile.puts line_input
     end
   end
-end
 
-def merge_log_file(server_index)
-  config_file = File.read('config_shard.json')
-  config_hash = JSON.parse(config_file)
 
-  log_path = FileUtils.pwd
-  partial_logs_path = log_path + config_hash["nodes"][server_index.to_s]["path"]
-  partial_logs_path << '/tmp/'
+  def merge_log_file
+    logs_path = "#{@my_abs_path}#{@my_rel_path}/tmp/"
 
-  partial_directories = Dir[partial_logs_path + '/usrs/*/']
+    partial_directories = Dir["#{logs_path}/usrs/*/"]
+    merge_threads = []
+    partial_directories.each do |user_directory|
+      merge_threads << Thread.new { merge_user(logs_path, user_directory) }
+    end
+    merge_threads.each { |thr| thr.join }
+  end
 
-  partial_directories.each do |user_directory|
-    final_log = partial_logs_path + File.basename(user_directory)
+  def merge_user(logs_path, user_directory)
+    uuid = File.basename(user_directory)
+    final_log = logs_path + uuid
     File.open final_log, 'a+' do |log|
       Dir[user_directory + '*_*'].each do |timelog|
         File.open timelog, 'r' do |partial|
-           partial.each do |partial_line|
-             log.puts partial_line
-           end
+          partial.each do |partial_line|
+            log.puts partial_line
+          end
         end
       end
     end
+    delete_tmp_user_specific_files(uuid)
   end
-end
 
-def delete_tmp_usrs_files(server_index)
-  config_file = File.read('config_shard.json')
-  config_hash = JSON.parse(config_file)
-
-  log_path = FileUtils.pwd
-  partial_logs_path = log_path + config_hash["nodes"][server_index.to_s]["path"]
-  partial_logs_path << '/tmp/usrs/'
-
-  FileUtils.rm_rf partial_logs_path
-end
-
-def thread_initial_files_shard(nodes)
-  threads = []
-  nodes.each do |node_index|
-    threads << Thread.new { initial_files_shard node_index }
+  def delete_tmp_user_specific_files(uuid)
+    FileUtils.rm_rf @my_abs_path + @my_rel_path + '/tmp/usrs/' + uuid + '/'
   end
-  threads.each { |thr| thr.join }
-end
 
-def thread_merge_partial_logs(nodes)
-  threads = []
-  nodes.each do |node_index|
-    threads << Thread.new { merge_log_file node_index }
+  def delete_tmp_usrs_files
+    FileUtils.rm_rf @my_abs_path + @my_rel_path + '/tmp/usrs/'
   end
-  threads.each { |thr| thr.join }
-end
 
-def thread_delete_tmp_files(nodes)
-  threads = []
-  nodes.each do |node_index|
-    threads << Thread.new { delete_tmp_usrs_files node_index }
+  def self.shard_logs(nodes)
+    threads = []
+    nodes.each do |node|
+      threads << Thread.new { node.initial_files_shard }
+    end
+    threads.each { |thr| thr.join }
+
+    threads = []
+    nodes.each do |node|
+      threads << Thread.new {  node.merge_log_file }
+    end
+    threads.each { |thr| thr.join }
+
+    threads = []
+    nodes.each do |node|
+      threads << Thread.new { node.delete_tmp_usrs_files }
+    end
+    threads.each { |thr| thr.join }
+    '-= sharded! =-'
   end
-  threads.each { |thr| thr.join }
-end
-
-def shard_logs
-  config_file = File.read('config_shard.json')
-  config_hash = JSON.parse(config_file)
-
-  nodes = config_hash["nodes"].keys
-
-  thread_initial_files_shard nodes
-  thread_merge_partial_logs nodes
-  thread_delete_tmp_files nodes
-
-  '-= sharded! =-'
 end
