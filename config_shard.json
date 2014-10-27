@@ -1,0 +1,24 @@
+{
+    "nodes": {
+        "0": {
+            "name": "Server1",
+            "path": "/server_1",
+            "files": ["/server_1/tmp/sample_file_more"]
+        },
+        "1": {
+            "name": "Server2",
+            "path": "/server_2",
+            "files": ["/server_2/tmp/sample_file_more"]
+        },
+        "2": {
+            "name": "Server3",
+            "path": "/server_3",
+            "files": ["/server_3/tmp/sample_file_more"]
+        },
+        "3": {
+            "name": "Server4",
+            "path": "/server_4",
+            "files": ["/server_4/tmp/sample_file_more"]
+        }
+    }
+}
