@@ -15,30 +15,9 @@ class ShardTest < Test::Unit::TestCase
         'files' => ["/server_1/tmp/sample_file_more"]
       }
     }
-    @nodes_four = {
-        '0' => {
-        'name' => "Server1",
-        'path' => "/server_1",
-        'files' => ["/server_1/tmp/sample_file_more"]
-      },
-        '1' => {
-        'name' => "Server2",
-        'path' => "/server_2",
-        'files' => ["/server_2/tmp/sample_file_more"]
-      },
-        '2' => {
-        'name' => "Server3",
-        'path' => "/server_3",
-        'files' => ["/server_3/tmp/sample_file_more"]
-      },
-        '3' => {
-        'name' => "Server4",
-        'path' => "/server_4",
-        'files' => ["/server_4/tmp/sample_file_more"]
-      }
-    }
     @nodes_paths = ["/server_1", "/server_2", "/server_3", "/server_4"]
     @path = FileUtils.pwd
+    @node_shard = Shard.new 0
   end
 
   def teardown
@@ -54,14 +33,14 @@ class ShardTest < Test::Unit::TestCase
 
   def test_shard_input_line
     file_expected = @path + '/server_1/tmp/usrs/0352b590-05ac-11e3-9923-c3e7d8408f3a/15Aug20131354380300_Server1'
-    shard_input_line @server_name, @line_input, @nodes
+    @node_shard.shard_input_line @line_input
     result = File.file?(file_expected)
     assert_equal(true, result)
   end
 
   def test_shard_input_line_correct
     file_expected = @path + '/server_1/tmp/usrs/0352b590-05ac-11e3-9923-c3e7d8408f3a/15Aug20131354380300_Server1'
-    shard_input_line @server_name, @line_input, @nodes
+    @node_shard.shard_input_line @line_input
     result = ''
     File.open file_expected, 'r' do |f|
       result = f.readline
@@ -70,7 +49,7 @@ class ShardTest < Test::Unit::TestCase
   end
 
   def test_merge_correct
-    shard_input_line @server_name, @line_input, @nodes
+    @node_shard.shard_input_line @line_input
     file_expected = @path + '/server_1/tmp/0352b590-05ac-11e3-9923-c3e7d8408f3a'
     merge_log_file @server_index
     result = File.file?(file_expected)
@@ -79,7 +58,7 @@ class ShardTest < Test::Unit::TestCase
 
   def test_delete_temp_files
     expected = @path + '/server_1/tmp/usrs'
-    shard_input_line @server_name, @line_input, @nodes
+    @node_shard.shard_input_line @line_input
     merge_log_file @server_index
     delete_tmp_usrs_files @server_index
     result = File.directory?(expected)
